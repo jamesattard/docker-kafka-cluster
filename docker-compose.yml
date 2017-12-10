@@ -1,0 +1,93 @@
+---
+version: '3'
+services:
+  proxy:
+    image: jwilder/nginx-proxy
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy
+
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      # ZOOKEEPER_SERVERS: localhost:22888:23888;localhost:32888:33888;localhost:42888:43888
+      ZOOKEEPER_SERVERS: zookeeper-1:22888:23888;zookeeper-2:22888:23888;zookeeper-3:22888:23888
+    networks:
+      - proxy
+
+  zookeeper-2:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper-1:22888:23888;zookeeper-2:22888:23888;zookeeper-3:22888:23888
+    networks:
+      - proxy
+
+  zookeeper-3:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_CLIENT_PORT: 22181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper-1:22888:23888;zookeeper-2:22888:23888;zookeeper-3:22888:23888
+    networks:
+      - proxy
+
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    environment:
+      KAFKA_BROKER_ID: 1
+      # KAFKA_ZOOKEEPER_CONNECT: localhost:22181,localhost:32181,localhost:42181
+      # KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:19092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:22181,zookeeper-2:22181,zookeeper-3:22181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:19092
+    networks:
+      - proxy
+
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:22181,zookeeper-2:22181,zookeeper-3:22181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:19092
+    networks:
+      - proxy
+
+  kafka-3:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+      - zookeeper-3
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:22181,zookeeper-2:22181,zookeeper-3:22181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:19092
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    driver: bridge
